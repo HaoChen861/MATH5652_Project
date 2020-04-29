@@ -72,13 +72,13 @@ namespace WpfApp5
 
                 if (isMasked)
                 {
-                    ProbInf += CurrentInfMasked / NumberMasked;
-                    Variance += Math.Pow(CurrentInfMasked / NumberMasked,2);
+                    ProbInf += 100*CurrentInfMasked / NumberMasked;
+                    Variance += Math.Pow(100*CurrentInfMasked / NumberMasked,2);
                 }
                 else
                 {
-                    ProbInf += CurrentInfUnMasked / NumberUnMasked;
-                    Variance += Math.Pow(CurrentInfUnMasked / NumberUnMasked,2);
+                    ProbInf += 100*CurrentInfUnMasked / NumberUnMasked;
+                    Variance += Math.Pow(100*CurrentInfUnMasked / NumberUnMasked,2);
                 }
 
                 MeanInfMask += Convert.ToDouble(CurrentInfMasked);
@@ -89,8 +89,11 @@ namespace WpfApp5
 
             MeanInfMask /= NT;
             MeanInfUnmask /= NT;
-            Variance = (Variance - ProbInf * ProbInf / NT) / (NT - 1);
+
             ProbInf /= NT;
+            ///Actually, it is SD
+            Variance = Math.Sqrt( Variance / NT - ProbInf * ProbInf);
+
             
         }
 

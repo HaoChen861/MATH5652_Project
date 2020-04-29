@@ -55,7 +55,8 @@ namespace WpfApp5
             else
             {
                 SimulationList.Add( new Simulation(NTVal, NUPVal, NMPVal, CIUVal, CIMVal, DFVal, MITVal, PIMVal, isMasked.IsChecked.Value));
-
+                MainViewModel ViewModel = new MainViewModel(SimulationList[SimulationList.Count - 1].ArrivalTimeList, SimulationList[SimulationList.Count - 1].ArrivalGroupList, CIUVal, CIMVal);
+                SimPlot.DataContext = ViewModel;
                 Result.Items.Refresh();
             }
         }
