@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace WpfApp5
 {
-    class Simulation
+    public class Simulation
     {
         public int NumberUnMasked { get; set; }
 
@@ -26,34 +26,45 @@ namespace WpfApp5
 
         public double ProbWithMask { get; set; }
 
-        public List<double> ArrivalTimeList { get; set; }
+        public List<double> ArrivalTimeList = new List<double>();
 
-        public List<int> ArrivalGroupList { get; set; }
+        public List<int> ArrivalGroupList = new List<int>();
 
         public bool isMasked { get; set; }
 
         public double ProbInf { get; set; }
 
+        public double MeanInfUnmask { get; set; }
+
+        public double MeanInfMask { get; set; }
+
+        public double Variance { get; set; }
+
         Random UniRand = new Random();
 
-        public Simulation(int NT, int aNumberUnMasked, int aNumberMasked, int aCurrentInfUnMasked, int aCurrentInfMasked, int aMaxNumber, double aMaxClock, double aRate, double aProbWithMask,bool aIsMask)
+        public Simulation(int NT, int aNumberUnMasked, int aNumberMasked, int aCurrentInfUnMasked, int aCurrentInfMasked, double aMaxClock, double aRate, double aProbWithMask,bool aIsMask)
         {
             NumberUnMasked = aNumberUnMasked;
             NumberMasked = aNumberMasked;
 
-            MaxNumber = aMaxNumber;
+            MaxNumber = aNumberUnMasked+ aNumberMasked;
             MaxClock = aMaxClock;
             Rate = aRate;
-            ProbWithMask = aProbWithMask;
+            ProbWithMask = aProbWithMask/100;
             isMasked = aIsMask;
-
+            MeanInfMask = 0;
+            MeanInfUnmask = 0;
             ProbInf = 0;
+            Variance = 0;
 
             for (int i =0; i < NT; i++)
             {
                 Clock = 0;
                 CurrentInfUnMasked = aCurrentInfUnMasked;
                 CurrentInfMasked = aCurrentInfMasked;
+                ArrivalTimeList.Clear();
+                ArrivalGroupList.Clear();
+
                 while (Clock < MaxClock && (CurrentInfMasked + CurrentInfUnMasked) < MaxNumber)
                 {
                     Spreads();
@@ -62,15 +73,25 @@ namespace WpfApp5
                 if (isMasked)
                 {
                     ProbInf += CurrentInfMasked / NumberMasked;
+                    Variance += Math.Pow(CurrentInfMasked / NumberMasked,2);
                 }
                 else
                 {
                     ProbInf += CurrentInfUnMasked / NumberUnMasked;
+                    Variance += Math.Pow(CurrentInfUnMasked / NumberUnMasked,2);
                 }
+
+                MeanInfMask += Convert.ToDouble(CurrentInfMasked);
+                MeanInfUnmask += Convert.ToDouble(CurrentInfUnMasked);
 
             }
 
-            ProbInf = ProbInf / NT;
+
+            MeanInfMask /= NT;
+            MeanInfUnmask /= NT;
+            Variance = (Variance - ProbInf * ProbInf / NT) / (NT - 1);
+            ProbInf /= NT;
+            
         }
 
 
@@ -84,11 +105,37 @@ namespace WpfApp5
             return - mean * Math.Log(1 - UniRand.NextDouble());
         }
 
-
+        /// <summary>
+        /// Model Spread
+        /// Get two random exp number based on current infected people
+        /// If the masked infection comes first, a masked person is infected
+        /// Otherwise, an unmasked person is infected
+        /// if the current infected is equal to number of masked then the random exp number becomes positive infinity
+        /// 
+        /// </summary>
         private void Spreads()
         {
-            double NextMask = GenerateMaskedArrival();
-            double NextUnMask = GenerateUnMaskedArrival();
+            double NextMask;
+            double NextUnMask;
+
+            if (CurrentInfMasked == NumberMasked)
+            {
+                NextMask = double.PositiveInfinity;
+            }
+            else
+            {
+                NextMask = GenerateMaskedArrival();
+            }
+            
+            if (CurrentInfUnMasked == NumberUnMasked)
+            {
+                NextUnMask = double.PositiveInfinity;
+            }
+            else
+            {
+                NextUnMask = GenerateUnMaskedArrival();
+            }
+            
 
             if (NextMask < NextUnMask)
             {
@@ -101,6 +148,10 @@ namespace WpfApp5
 
         }
 
+        /// <summary>
+        /// when an unmasked person is infected
+        /// </summary>
+        /// <param name="NextUnMask"></param>
         private void HandleUnMaskedArrival(double NextUnMask)
         {
            if (Clock < MaxClock &  CurrentInfUnMasked < NumberUnMasked)
@@ -112,6 +163,10 @@ namespace WpfApp5
             }
         }
 
+        /// <summary>
+        /// when a masked person is infected
+        /// </summary>
+        /// <param name="NextMask"></param>
         private void HandleMaskedArrival(double NextMask)
         {
             if (Clock < MaxClock & CurrentInfMasked < NumberMasked)
@@ -123,13 +178,18 @@ namespace WpfApp5
             }
         }
 
-
+        /// <summary>
+        /// Use min{exp(lambda),exp(mu)}~exp(lambda+mu)
+        /// Masked people have lower rate of transmission
+        /// if the probability of getting infected is 0.1, the mean time is timed by 10
+        /// </summary>
+        /// <returns></returns>
         private double GenerateUnMaskedArrival()
         {
             double MeanUnMasked;
             if (CurrentInfUnMasked == 0)
             {
-                MeanUnMasked = double.PositiveInfinity;
+                MeanUnMasked = 0;
             }
             else
             {
@@ -139,7 +199,7 @@ namespace WpfApp5
             double MeanMasked;
             if (CurrentInfMasked == 0)
             {
-                MeanMasked = double.PositiveInfinity;
+                MeanMasked = 0;
             }
             else
             {
@@ -154,7 +214,7 @@ namespace WpfApp5
             double MeanUnMasked;
             if (CurrentInfUnMasked == 0)
             {
-                MeanUnMasked = double.PositiveInfinity;
+                MeanUnMasked = 0;
             }
             else
             {
@@ -164,7 +224,7 @@ namespace WpfApp5
             double MeanMasked;
             if (CurrentInfMasked == 0)
             {
-                MeanMasked = double.PositiveInfinity;
+                MeanMasked = 0;
             }
             else
             {
@@ -175,5 +235,14 @@ namespace WpfApp5
         }
 
 
+    }
+
+    public class Simulation<T> : Simulation
+    {
+        public Simulation(int NT, int aNumberUnMasked, int aNumberMasked, int aCurrentInfUnMasked, int aCurrentInfMasked, double aMaxClock, double aRate, double aProbWithMask, bool aIsMask)
+            : base(NT, aNumberUnMasked, aNumberMasked, aCurrentInfUnMasked, aCurrentInfMasked, aMaxClock, aRate, aProbWithMask, aIsMask)
+        {
+
+        }
     }
 }
