@@ -50,7 +50,7 @@ namespace WpfApp5
             MaxNumber = aNumberUnMasked+ aNumberMasked;
             MaxClock = aMaxClock;
             Rate = aRate;
-            ProbWithMask = aProbWithMask/100;
+            ProbWithMask = 1 - aProbWithMask / 100;
             isMasked = aIsMask;
             MeanInfMask = 0;
             MeanInfUnmask = 0;
